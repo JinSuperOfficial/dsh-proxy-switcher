@@ -8,9 +8,11 @@
  */
 import { appendFileSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { homedir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { startHttpProxy } from '../test/helpers/fake-proxy.mjs'
 
-const LOG = 'F:/@Project/DeepSeekHarnes/dsh-proxy-switcher/probe/probe-global2.log'
+const LOG = fileURLToPath(new URL('./probe-global2.log', import.meta.url))
 try { rmSync(LOG) } catch {}
 const log = (m) => { appendFileSync(LOG, `${m}\n`); console.log(m) }
 setTimeout(() => { log('WATCHDOG'); process.exit(9) }, 90000).unref?.()
@@ -19,7 +21,8 @@ for (const name of ['ALL_PROXY', 'all_proxy', 'HTTP_PROXY', 'http_proxy', 'HTTPS
   delete process.env[name]
 }
 
-const profileDir = process.env.DSH_PROFILE_DIR ?? 'C:/Users/30394/.dsh/profiles/desktop'
+const profileDir = process.env.DSH_PROFILE_DIR
+  ?? `${process.env.DSH_HOME ?? `${homedir()}/.dsh`}/profiles/desktop`
 const require = createRequire(`${profileDir}/package.json`)
 const undici = require('undici')
 log(`npm undici -> ${require.resolve('undici')}`)

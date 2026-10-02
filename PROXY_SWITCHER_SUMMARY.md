@@ -1,6 +1,6 @@
 # dsh-proxy-switcher — 关键结论 · 实现方案 · 测试结果（总结）
 
-> 工作区：`F:\@Project\DeepSeekHarnes\dsh-proxy-switcher`
+> 工作区：`<workspace>`
 > 目标：让运行中的 dsh 能热切换出站代理，入口集成在 dsh 设置里，**无需重启**
 > 日期：2026-10-02
 
@@ -111,7 +111,7 @@ capabilities.undiciVersion = "8.11.2"
 
 ### 1.7 版本错位（分析前提，必须记住）
 
-本地检出 `F:\@Project\DeepSeekHarnes\deepseek-harness` 是 **0.1.0-rc.7**，而运行的是 **0.2.0-rc.2**。
+本地检出 `<checkout>` 是 **0.1.0-rc.7**，而运行的是 **0.2.0-rc.2**。
 0.1.0-rc.7 **完全没有代理实现**（`packages/llm/llm-deepseek/README.md:113` 明确写着 raw `fetch`、
 无共享代理/拦截配置）；代理层是 0.2.0 才加的。
 所以对"运行中的代码"的任何判断，都必须以 `~/.dsh/profiles/node_modules/@deepseek-ai/*` 为准。

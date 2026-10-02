@@ -10,10 +10,11 @@
  * Hermetic: local fake proxies, unresolvable destination.
  */
 import { appendFileSync, rmSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { startHttpProxy, startSocks5Proxy } from '../test/helpers/fake-proxy.mjs'
 import { resolveUndici, undiciModule, undiciOrigin } from '../lib/transport.js'
 
-const LOG = 'F:/@Project/DeepSeekHarnes/dsh-proxy-switcher/probe/probe-placements.log'
+const LOG = fileURLToPath(new URL('./probe-placements.log', import.meta.url))
 try { rmSync(LOG) } catch {}
 const log = (m) => { appendFileSync(LOG, `${m}\n`); console.log(m) }
 setTimeout(() => { log('WATCHDOG'); process.exit(9) }, 120000).unref?.()

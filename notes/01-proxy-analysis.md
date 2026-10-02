@@ -1,12 +1,12 @@
 # 01 — How DSH outbound network requests resolve proxies
 
-Analysis date: 2026-10-02 (session workdir `F:\@Project\DeepSeekHarnes\dsh-proxy-switcher`).
+Analysis date: 2026-10-02 (session workdir `<workspace>`).
 
 Sources inspected:
 
-- **Checkout** — `F:\@Project\DeepSeekHarnes\deepseek-harness` (git tag `dsh-v0.1.0-rc.7`).
-- **Installed / running runtime** — `%APPDATA%\npm\node_modules\@deepseek-ai\dsh@0.2.0-rc.2`, reached from the profile through junctions at `C:\Users\30394\.dsh\profiles\node_modules\@deepseek-ai\*`.
-- **Desktop runtime** — `C:\Users\30394\AppData\Local\Programs\DeepSeek Harness\resources\runtime`.
+- **Checkout** — `<checkout>` (git tag `dsh-v0.1.0-rc.7`).
+- **Installed / running runtime** — `%APPDATA%\npm\node_modules\@deepseek-ai\dsh@0.2.0-rc.2`, reached from the profile through junctions at `%USERPROFILE%\.dsh\profiles\node_modules\@deepseek-ai\*`.
+- **Desktop runtime** — `%LOCALAPPDATA%\Programs\DeepSeek Harness\resources\runtime`.
 - **Live process facts** — measured with the runtime's own Node binaries (read-only probes; no environment variable of the user's shell was modified).
 
 > ⚠️ **Read the Summary's first bullet before acting on any file:line below.** The checkout is a *newer-published-but-older-versioned* snapshot that does **not** contain the running code's proxy layer.
@@ -15,7 +15,7 @@ Sources inspected:
 
 ## Summary
 
-1. **The checkout and the running runtime are different versions, and the difference is exactly this topic.** The checkout is `0.1.0-rc.7` (`package.json:2` `"version": "0.1.0-rc.7"`); the process actually serving the Web GUI runs `@deepseek-ai/dsh@0.2.0-rc.2` (`C:\Users\30394\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh\package.json` → `name: @deepseek-ai/dsh, version: 0.2.0-rc.2`).
+1. **The checkout and the running runtime are different versions, and the difference is exactly this topic.** The checkout is `0.1.0-rc.7` (`package.json:2` `"version": "0.1.0-rc.7"`); the process actually serving the Web GUI runs `@deepseek-ai/dsh@0.2.0-rc.2` (`%USERPROFILE%\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh\package.json` → `name: @deepseek-ai/dsh, version: 0.2.0-rc.2`).
 2. **In the checkout, DSH has *no* outbound proxy support at all.** There is no `getProxyForUrl`, no `proxy-from-env`, no `ProxyAgent`, no `EnvHttpProxyAgent`, no `setGlobalDispatcher`, no `undici` dependency anywhere in `packages/`, `apps/`, `vendor/` or `patches/`. The only code that *mentions* proxy variables deliberately **refuses** them from `.env` files (`packages/boot/app-boot/src/index.ts:111`), and `packages/llm/llm-deepseek/README.md:113` records the omission as a known limitation.
 3. **In the running `0.2.0-rc.2` runtime, a dedicated, supported, process-wide seam exists**: `@deepseek-ai/dsh-http-proxy` — *"Process-wide outbound HTTP proxy policy for DeepSeek Harness: resolve it from the launch environment and install it as undici's global dispatcher"*. The launcher installs it once per profile boot, before any plugin mounts.
 4. **Every in-process outbound call that uses global `fetch` is therefore already proxied** — the DeepSeek LLM adapter, the pi-ai adapter stack, web search (DeepSeek/Exa/Perplexity), `web-fetch-http`, and MCP-over-HTTP — with **no per-call-site code**.
@@ -30,14 +30,14 @@ Sources inspected:
 
 | Fact | Evidence |
 |---|---|
-| Harness host process is `@deepseek-ai/dsh-desktop-host` run as Electron-as-Node | `Get-CimInstance Win32_Process` PID 11864: `"...\DeepSeek Harness.exe" --expose-internals "...\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\index.js" "...app.asar\dsh" "C:\Users\30394\.dsh\profiles\desktop" "...\runtime\primary-runtime" "...\runtime\pnpm\bin\pnpm.mjs" "...\runtime\bin"` |
+| Harness host process is `@deepseek-ai/dsh-desktop-host` run as Electron-as-Node | `Get-CimInstance Win32_Process` PID 11864: `"...\DeepSeek Harness.exe" --expose-internals "...\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\index.js" "...app.asar\dsh" "%USERPROFILE%\.dsh\profiles\desktop" "...\runtime\primary-runtime" "...\runtime\pnpm\bin\pnpm.mjs" "...\runtime\bin"` |
 | Electron version | `<install>\version` = `44.0.0` |
 | Node inside that process | measured: `24.18.1` (`process.versions.node`), internal undici `7.29.0` |
 | Bundled standalone Node / pnpm | `<install>\resources\runtime\versions.json` → `"node": "24.21.0", "pnpm": "11.7.0"` |
 | `node` shim | `<install>\resources\runtime\bin\node.cmd:1-3` → `set ELECTRON_RUN_AS_NODE=1` + `"%DSH_DESKTOP_NODE_EXECUTABLE%" --expose-internals %*` |
-| Where plugins resolve from | `C:\Users\30394\.dsh\profiles\node_modules\@deepseek-ai\<pkg>` are **junctions** into `C:\Users\30394\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai\<pkg>` |
-| User-profile-only deps (hoisted for third-party plugins) | `C:\Users\30394\.dsh\profiles\desktop\node_modules\` contains `undici@7.30.0`, `dshmarket`, `dsh-better-sidebar`, `dsh-claude-style`, `dsh-hot-reload`, `dsh-whale-widget` |
-| Mounted plugins (relevant rows) | `C:\Users\30394\.dsh\profiles\desktop\cordis.yml` → `llm`, `llm-deepseek`, `llm-deepseek-account`, `llm-pi-ai`, `web` (`searchProvider: deepseek-official`, `fetchProvider: http`), `web-search-deepseek`, `web-fetch-http`, `tool-web`, `session-telemetry-otel`, `desktop-product-telemetry` (`@deepseek-ai/dsh-host-product-telemetry-otel`), `mcp-resources`, `subprocess`, `subagent-*` |
+| Where plugins resolve from | `%USERPROFILE%\.dsh\profiles\node_modules\@deepseek-ai\<pkg>` are **junctions** into `%USERPROFILE%\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai\<pkg>` |
+| User-profile-only deps (hoisted for third-party plugins) | `%USERPROFILE%\.dsh\profiles\desktop\node_modules\` contains `undici@7.30.0`, `dshmarket`, `dsh-better-sidebar`, `dsh-claude-style`, `dsh-hot-reload`, `dsh-whale-widget` |
+| Mounted plugins (relevant rows) | `%USERPROFILE%\.dsh\profiles\desktop\cordis.yml` → `llm`, `llm-deepseek`, `llm-deepseek-account`, `llm-pi-ai`, `web` (`searchProvider: deepseek-official`, `fetchProvider: http`), `web-search-deepseek`, `web-fetch-http`, `tool-web`, `session-telemetry-otel`, `desktop-product-telemetry` (`@deepseek-ai/dsh-host-product-telemetry-otel`), `mcp-resources`, `subprocess`, `subagent-*` |
 
 **Consequence:** every `file:line` from the checkout below describes `0.1.0-rc.7`, i.e. *what upstream looked like before the proxy layer landed*. Where I cite installed code I say so explicitly.
 
@@ -73,7 +73,7 @@ Documentation acknowledgement: `apps/cli/reference/README.md:84` — *"The proce
 
 ### 1.2 Running runtime (`0.2.0-rc.2`) — `@deepseek-ai/dsh-http-proxy`
 
-`C:\Users\30394\.dsh\profiles\node_modules\@deepseek-ai\dsh-http-proxy\package.json`:
+`%USERPROFILE%\.dsh\profiles\node_modules\@deepseek-ai\dsh-http-proxy\package.json`:
 
 ```json
 "name": "@deepseek-ai/dsh-http-proxy",
@@ -128,7 +128,7 @@ Documented policy (README):
 
 ### 1.4 Third-party proxy readers already installed (not DSH core)
 
-`C:\Users\30394\.dsh\profiles\desktop\node_modules\dshmarket\lib\net.js` resolves proxies itself, per request:
+`%USERPROFILE%\.dsh\profiles\desktop\node_modules\dshmarket\lib\net.js` resolves proxies itself, per request:
 
 - ``:59-82`` `configuredProxy()` / `proxyFromEnv()` — reads `process.env.https_proxy ?? process.env.HTTPS_PROXY`, `http_proxy ?? HTTP_PROXY`, falling back to `npm_config_https_proxy` / `npm_config_proxy`; scheme-less `host:port` gets `http://` prefixed.
 - ``:95-110`` `marketFetch()` builds/reuses `new EnvHttpProxyAgent({httpProxy, httpsProxy})` or `new Agent()`, and calls undici's **own** `fetch` with `dispatcher`.
@@ -245,7 +245,7 @@ export interface WebFetchProvider {
 - ``:92-93`` `this.searchProviderId = config.searchProvider ?? process.env.DSH_WEB_SEARCH_PROVIDER` / same for `DSH_WEB_FETCH_PROVIDER` — **read once in the constructor**, i.e. at plugin load.
 - ``:103-116`` `registerSearchProvider` / `registerFetchProvider`; duplicates throw `WEB_DUPLICATE_PROVIDER` (``:119-121``); the disposer is fiber-scoped via `ctx.effect` (``:122-128``).
 - ``:140-163`` `search()`/`fetch()` resolve the provider **at call time** through `resolveProvider` (``:172-194``): configured id → that provider (missing ⇒ `WEB_PROVIDER_CONFIGURED_MISSING`, unavailable ⇒ `WEB_PROVIDER_CONFIGURED_UNAVAILABLE`); otherwise exactly one usable provider auto-selects, several ⇒ `WEB_PROVIDER_AMBIGUOUS`, none ⇒ `WEB_PROVIDER_UNAVAILABLE`.
-- Live profile config (`C:\Users\30394\.dsh\profiles\desktop\cordis.yml`, `id: web`): `searchProvider: deepseek-official`, `fetchProvider: http`.
+- Live profile config (`%USERPROFILE%\.dsh\profiles\desktop\cordis.yml`, `id: web`): `searchProvider: deepseek-official`, `fetchProvider: http`.
 
 **`web-fetch-http`**
 
@@ -438,7 +438,7 @@ Design constraints a plugin must respect:
 2. **HTTP clients actually used** — global `fetch` everywhere (LLM adapters, web search, `web-fetch-http`, pi-ai, MCP HTTP); `node:http(s)` in the OTLP exporter; `pnpm`/`execa` for package installs; `undici`'s own `fetch` inside `dsh-http-proxy` and `web-fetch-http`.
 3. **Injectability / caching** — no per-request `dispatcher` option exists on any DSH adapter; the routing decision is **cached at install time** in the dispatcher closure. `web-fetch-http` *does* accept the process dispatcher per request via `proxyRouteFor`. Env proxy behaviour is **not** re-read per request anywhere in DSH.
 4. **Existing supported seam** — yes: `@deepseek-ai/dsh-http-proxy` (library, not a plugin, one answer per process). Web providers are replaceable through `ctx.web.registerFetchProvider`/`registerSearchProvider`; LLM adapters through `ctx.llm.registerAdapter` (no shadowing); there is **no** `ctx.http` service in the checkout.
-5. **undici** — not a direct dependency of any package or app in the monorepo (`grep` over every `package.json` in `packages/` for `undici` → no matches). Resolvable transitively at `undici@7.28.0` (`pnpm-lock.yaml:13881-13883`), pulled in by `e2b@2.29.1` (`:17216`) and `jsdom@29.1.1` (`:17901`), present at `node_modules\.pnpm\undici@7.28.0\...` and `node_modules\.pnpm\node_modules\undici`, but **not** at the repo root (`F:\...\deepseek-harness\node_modules\undici` does not exist). Installed profile: `C:\Users\30394\.dsh\profiles\node_modules\undici` = **8.11.2** (junction to `%APPDATA%\npm\node_modules\@deepseek-ai\dsh\node_modules\undici`), declared by `dsh-http-proxy` as `undici: ^8.10.0`; the desktop profile additionally hoists **7.30.0** for third-party plugins.
+5. **undici** — not a direct dependency of any package or app in the monorepo (`grep` over every `package.json` in `packages/` for `undici` → no matches). Resolvable transitively at `undici@7.28.0` (`pnpm-lock.yaml:13881-13883`), pulled in by `e2b@2.29.1` (`:17216`) and `jsdom@29.1.1` (`:17901`), present at `node_modules\.pnpm\undici@7.28.0\...` and `node_modules\.pnpm\node_modules\undici`, but **not** at the repo root (`F:\...\deepseek-harness\node_modules\undici` does not exist). Installed profile: `%USERPROFILE%\.dsh\profiles\node_modules\undici` = **8.11.2** (junction to `%APPDATA%\npm\node_modules\@deepseek-ai\dsh\node_modules\undici`), declared by `dsh-http-proxy` as `undici: ^8.10.0`; the desktop profile additionally hoists **7.30.0** for third-party plugins.
 6. **Node version** — checkout `package.json:8-10` `"engines": { "node": "^22.19.0 || >=24.0.0" }`. Bundled standalone Node **24.21.0** and pnpm 11.7.0 (`resources\runtime\versions.json`), shimmed as Electron-as-Node (`runtime\bin\node.cmd:1-3`); the actual harness host process runs **Electron 44.0.0 / Node 24.18.1** (internal undici 7.29.0). `NODE_USE_ENV_PROXY` is honoured: fetch since 24.0.0 and `node:http`/`node:https` since 24.5.0, so 24.18.1 covers both ([Node.js docs — Enterprise Network Configuration](https://nodejs.org/learn/http/enterprise-network-configuration): *"This works with `node:http` and `node:https` (v22.21.0 or v24.5.0+) methods as well as `fetch()` (v22.21.0 or v24.0.0+)"*). Runtime changeability: **no** for `fetch`; **yes, via an API call** for `node:http(s)` — `http.setGlobalProxyFromEnv([proxyEnv])` exists in both 24.18.1 and 24.21.0 ([`http.setGlobalProxyFromEnv` in the Node 24 docs](https://nodejs.org/docs/latest-v24.x/api/http.html#httpsetglobalproxyfromenv), measured working at runtime without the bootstrap flag).
 
 ---

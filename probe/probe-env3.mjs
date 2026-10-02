@@ -7,8 +7,9 @@
  */
 import { createServer } from 'node:http'
 import { appendFileSync, rmSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
-const LOG = 'F:/@Project/DeepSeekHarnes/dsh-proxy-switcher/probe/probe-env3.log'
+const LOG = fileURLToPath(new URL('./probe-env3.log', import.meta.url))
 try { rmSync(LOG) } catch {}
 const log = (m) => { appendFileSync(LOG, `${m}\n`); console.log(m) }
 setTimeout(() => { log('WATCHDOG'); process.exit(9) }, 60000).unref?.()

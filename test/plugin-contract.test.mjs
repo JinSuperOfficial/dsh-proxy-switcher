@@ -10,7 +10,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { tmpdir, homedir } from 'node:os'
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
 import { startHttpProxy } from './helpers/fake-proxy.mjs'
@@ -232,7 +232,8 @@ test('the client half is a classic script registering a synchronous factory', ()
 })
 
 test('the client half registers a Proxy page on the settings.section slot', async () => {
-  const profileDir = process.env.DSH_PROFILE_DIR ?? 'C:/Users/30394/.dsh/profiles/desktop'
+  const profileDir = process.env.DSH_PROFILE_DIR
+    ?? `${process.env.DSH_HOME ?? join(homedir(), '.dsh')}/profiles/desktop`
   const require = createRequire(`${profileDir}/package.json`)
 
   // A fake loader sink that captures the factory exactly as the shell would.

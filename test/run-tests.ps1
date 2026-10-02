@@ -15,8 +15,11 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$harnessExe = 'C:\Users\30394\AppData\Local\Programs\DeepSeek Harness\DeepSeek Harness.exe'
-$bundledNode = 'C:\Users\30394\AppData\Local\Programs\DeepSeek Harness\resources\runtime\primary-runtime\dependencies\node\bin\node.exe'
+# The desktop app install path; override with $env:DSH_HARNESS_DIR when it lives
+# elsewhere (the default is `%LOCALAPPDATA%\Programs\DeepSeek Harness`).
+$harnessDir = if ($env:DSH_HARNESS_DIR) { $env:DSH_HARNESS_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs\DeepSeek Harness' }
+$harnessExe = Join-Path $harnessDir 'DeepSeek Harness.exe'
+$bundledNode = Join-Path $harnessDir 'resources\runtime\primary-runtime\dependencies\node\bin\node.exe'
 
 # Prefer the harness binary (Electron-as-Node 24.18.1 = the real host runtime);
 # fall back to the bundled standalone Node.

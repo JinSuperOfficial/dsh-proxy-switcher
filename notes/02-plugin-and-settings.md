@@ -3,10 +3,10 @@
 Investigation report for an engineer writing a **new third-party DSH plugin that adds a settings page to the DSH Web GUI**.
 
 Sources read:
-- Source checkout: `F:\@Project\DeepSeekHarnes\deepseek-harness` (root `package.json` version **`0.1.0-rc.7`**)
-- Live profile: `C:\Users\30394\.dsh\profiles\desktop` (real third-party plugins installed)
-- The in-box packages the *live* GUI actually runs: `C:\Users\30394\.dsh\profiles\node_modules\@deepseek-ai\*` (**`0.2.0-rc.2`**) — resolved through the "healed flat fallback" described below.
-- `C:\Users\30394\AppData\Local\Programs\DeepSeek Harness\resources\app.asar` → `dsh/node_modules/@deepseek-ai/{dsh-plugin-manager,dsh-config-editor}` (extracted read-only; these two packages exist **only** in the running 0.2.0-rc.2, not in the checkout).
+- Source checkout: `<checkout>` (root `package.json` version **`0.1.0-rc.7`**)
+- Live profile: `%USERPROFILE%\.dsh\profiles\desktop` (real third-party plugins installed)
+- The in-box packages the *live* GUI actually runs: `%USERPROFILE%\.dsh\profiles\node_modules\@deepseek-ai\*` (**`0.2.0-rc.2`**) — resolved through the "healed flat fallback" described below.
+- `%LOCALAPPDATA%\Programs\DeepSeek Harness\resources\app.asar` → `dsh/node_modules/@deepseek-ai/{dsh-plugin-manager,dsh-config-editor}` (extracted read-only; these two packages exist **only** in the running 0.2.0-rc.2, not in the checkout).
 
 ---
 
@@ -865,7 +865,7 @@ Mount points in the live profile's `cordis.yml`:
 
 Both `/tools` and the base package are mounted with `disabled: !!js '!ctx.get(''profileContext'')'` — i.e. the manager only activates for a **profile boot**, which is the case for the desktop profile.
 
-**Observed backup files** in `C:\Users\30394\.dsh\profiles\desktop`: `cordis.patch.yml.bak-1790866443907` and `package.json.bak-before-dsh-browser`. The `*.bak-<epoch-ms>` naming and the `-before-dsh-browser` label do **not** appear in either the plugin-manager README or the CLI code, and `dshmarket`'s package ships its own `lib/backup.js` / `lib/restore` machinery — so these are almost certainly written by the `dshmarket` third-party market plugin (or manually), **not** by DSH's own manager. Treat them as user-space artifacts, not a documented DSH rollback contract.
+**Observed backup files** in `%USERPROFILE%\.dsh\profiles\desktop`: `cordis.patch.yml.bak-1790866443907` and `package.json.bak-before-dsh-browser`. The `*.bak-<epoch-ms>` naming and the `-before-dsh-browser` label do **not** appear in either the plugin-manager README or the CLI code, and `dshmarket`'s package ships its own `lib/backup.js` / `lib/restore` machinery — so these are almost certainly written by the `dshmarket` third-party market plugin (or manually), **not** by DSH's own manager. Treat them as user-space artifacts, not a documented DSH rollback contract.
 
 ### 5.4 Profile layout, pnpm settings and module resolution
 
@@ -915,7 +915,7 @@ The **two-anchor resolution** that lets a third-party plugin import nothing and 
 
 > Maintain the flat module fallback `$DSH_HOME/profiles/node_modules`: one symlink per package in the dsh app's resolvable dependency CLOSURE (BFS over `dependencies` from the app manifest), each resolved from its own real location. Node's parent-directory walk from any profile finds this directory after the profile's own `node_modules`, so every in-box plugin resolves without pnpm ever managing it — the exact "bundles come from the installation" contract.
 
-Confirmed live: `C:\Users\30394\.dsh\profiles\node_modules\@deepseek-ai\` holds 249 entries at version `0.2.0-rc.2`, while `C:\Users\30394\.dsh\profiles\desktop\node_modules\@deepseek-ai\` holds only `cosmokit` and `schemastery`.
+Confirmed live: `%USERPROFILE%\.dsh\profiles\node_modules\@deepseek-ai\` holds 249 entries at version `0.2.0-rc.2`, while `%USERPROFILE%\.dsh\profiles\desktop\node_modules\@deepseek-ai\` holds only `cosmokit` and `schemastery`.
 
 ### 5.5 Layer composition and the patch format
 
@@ -2370,7 +2370,7 @@ dsh plugin --profile desktop add ./dsh-my-plugin
 dsh plugin --profile desktop add dsh-my-plugin
 ```
 
-That runs `pnpm add` in `C:\Users\30394\.dsh\profiles\desktop`, then appends `dsh-my-plugin` to `dsh.profile.bundles`. Boot merges the bundle's `cordis.patch.yml`, mounting the `my-plugin` row; `clientModules` then scans that row, finds `dsh.client`, and serves `lib/client.js` at `/plugins/dsh-my-plugin/client.js`. **A restart is required** for a newly added bundle (client-module package metadata is cached per name and never expires, `docs/subsystems/client-modules.md:53`).
+That runs `pnpm add` in `%USERPROFILE%\.dsh\profiles\desktop`, then appends `dsh-my-plugin` to `dsh.profile.bundles`. Boot merges the bundle's `cordis.patch.yml`, mounting the `my-plugin` row; `clientModules` then scans that row, finds `dsh.client`, and serves `lib/client.js` at `/plugins/dsh-my-plugin/client.js`. **A restart is required** for a newly added bundle (client-module package metadata is cached per name and never expires, `docs/subsystems/client-modules.md:53`).
 
 Removal: `dsh plugin --profile desktop remove dsh-my-plugin`. To disable without uninstalling, add to the profile's `cordis.patch.yml`:
 
