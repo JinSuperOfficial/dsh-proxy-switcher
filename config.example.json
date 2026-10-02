@@ -1,0 +1,59 @@
+{
+  "$comment": "Example configuration for dsh-proxy-switcher. The plugin writes this file itself; copy it to $DSH_HOME/proxy-switcher.json (default C:\\Users\\<you>\\.dsh\\proxy-switcher.json) only if you prefer to edit it by hand. Anything the settings page writes lands in the same shape. Environment variables override every field below; see README.md for the precedence order.",
+  "version": 1,
+
+  "enabled": true,
+  "mode": "custom",
+  "activeProfile": "clash",
+
+  "profiles": [
+    {
+      "id": "clash",
+      "name": "Clash Verge (local)",
+      "protocol": "http",
+      "host": "127.0.0.1",
+      "port": 7890,
+      "username": "",
+      "password": "",
+      "passwordEnv": "",
+      "noProxy": ""
+    },
+    {
+      "id": "company",
+      "name": "Corporate proxy (credentials from the environment)",
+      "protocol": "http",
+      "host": "proxy.corp.example",
+      "port": 3128,
+      "username": "alice",
+      "password": "",
+      "passwordEnv": "CORP_PROXY_PASSWORD",
+      "noProxy": "*.corp.example,10.0.0.0/8"
+    },
+    {
+      "id": "ssh-tunnel",
+      "name": "SOCKS5 tunnel",
+      "protocol": "socks5",
+      "host": "127.0.0.1",
+      "port": 1080,
+      "username": "",
+      "password": "",
+      "passwordEnv": "",
+      "noProxy": ""
+    }
+  ],
+
+  "noProxy": "localhost,127.0.0.1,::1,[::1]",
+  "bypassLoopback": true,
+
+  "probeUrl": "https://www.gstatic.com/generate_204",
+  "timeoutMs": 15000,
+
+  "onMissingProfile": "block",
+
+  "fallback": {
+    "mode": "off",
+    "failureThreshold": 3
+  },
+
+  "historyLimit": 50
+}

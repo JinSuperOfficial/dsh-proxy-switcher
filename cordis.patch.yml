@@ -1,0 +1,26 @@
+# dsh-proxy-switcher bundle patch — mounts the proxy switcher so the running dsh
+# can change its outbound proxy (direct / system env / custom, or any saved
+# proxy profile) at runtime, without a restart.
+#
+# The plugin installs a wrapper over the host process's global `fetch`: every
+# new request resolves the currently effective policy and attaches the matching
+# undici dispatcher. Existing pooled sockets are drained gracefully, so in-flight
+# requests finish on the old transport.
+#
+# Config lives outside this file (see README): the settings page writes it, and
+# environment variables override it. The `config` block below is only the
+# bundle-level seed for the very first run.
+- insert:
+    - id: proxy-switcher
+      name: 'dsh-proxy-switcher'
+      # config:
+      #   # 'direct' | 'system' | 'custom' — or omit and let the settings page decide.
+      #   mode: system
+      #   # Profile id to use when mode is 'custom'.
+      #   activeProfile: clash
+      #   # Extra host patterns never proxied, comma separated (no_proxy syntax).
+      #   noProxy: ''
+      #   # 'off' | 'direct' — auto-fall back to direct after repeated proxy failures.
+      #   fallbackMode: off
+      #   # Only for tests: skip installing the global fetch wrapper.
+      #   disableInterception: false

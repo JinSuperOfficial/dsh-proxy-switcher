@@ -1,0 +1,7 @@
+# Normalize line endings so published sources stay readable everywhere.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.gz binary
+*.zip binary

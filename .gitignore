@@ -1,0 +1,16 @@
+# Dependencies (installed locally by the dsh profile, never committed)
+node_modules/
+
+# Probe logs written by probe/*.mjs
+probe/*.log
+
+# Editor / OS noise
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+*.swp
+
+# Local overrides for the plugin config (config.example.json is the template)
+proxy-switcher.json
+proxy-switcher.local.json
